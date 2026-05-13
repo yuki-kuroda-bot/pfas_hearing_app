@@ -1,0 +1,928 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PFAS入口ヒアリング管理</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --ink: #1d2733;
+      --muted: #687383;
+      --line: #d9dee7;
+      --accent: #0f766e;
+      --accent-dark: #115e59;
+      --warn: #b45309;
+      --bad: #b91c1c;
+      --good: #047857;
+      --shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+    }
+
+    header {
+      background: #15313a;
+      color: white;
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      font-size: 22px;
+      margin: 0;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      font-size: 18px;
+      margin: 0 0 12px;
+    }
+
+    h3 {
+      font-size: 15px;
+      margin: 18px 0 10px;
+    }
+
+    main {
+      width: min(1240px, 100%);
+      margin: 0 auto;
+      padding: 18px;
+      display: grid;
+      grid-template-columns: 330px 1fr;
+      gap: 18px;
+    }
+
+    aside,
+    section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    aside {
+      padding: 14px;
+      height: calc(100vh - 108px);
+      overflow: auto;
+      position: sticky;
+      top: 16px;
+    }
+
+    section {
+      padding: 18px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 9px 10px;
+      font: inherit;
+      color: var(--ink);
+      background: white;
+    }
+
+    textarea {
+      min-height: 86px;
+      resize: vertical;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .grid.three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .field {
+      margin-bottom: 12px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: white;
+      color: var(--ink);
+      padding: 9px 12px;
+      font: inherit;
+      cursor: pointer;
+      min-height: 38px;
+    }
+
+    button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    button.primary:hover { background: var(--accent-dark); }
+
+    button.danger {
+      border-color: #fecaca;
+      color: var(--bad);
+    }
+
+    button:focus,
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: 3px solid rgba(20, 184, 166, 0.18);
+      border-color: var(--accent);
+    }
+
+    .customer-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .customer-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: #fbfcfd;
+      cursor: pointer;
+    }
+
+    .customer-card.active {
+      border-color: var(--accent);
+      box-shadow: inset 0 0 0 1px var(--accent);
+    }
+
+    .customer-card strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .customer-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .pill-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .pill {
+      font-size: 12px;
+      padding: 3px 7px;
+      border-radius: 999px;
+      background: #e6f4f1;
+      color: #145a54;
+      border: 1px solid #b9ddd7;
+    }
+
+    .pill.a { background: #dcfce7; color: var(--good); border-color: #a7f3d0; }
+    .pill.b { background: #fef3c7; color: var(--warn); border-color: #fde68a; }
+    .pill.c { background: #fee2e2; color: var(--bad); border-color: #fecaca; }
+
+    .scoreboard {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      margin: 12px 0 18px;
+    }
+
+    .score {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: #fbfcfd;
+    }
+
+    .score span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .score strong {
+      display: block;
+      font-size: 22px;
+      margin-top: 3px;
+    }
+
+    .question {
+      border-top: 1px solid var(--line);
+      padding-top: 12px;
+      margin-top: 12px;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .notice {
+      background: #ecfeff;
+      border: 1px solid #a5f3fc;
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: #164e63;
+      margin-bottom: 14px;
+      font-size: 14px;
+    }
+
+    @media (max-width: 860px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+
+      aside {
+        position: static;
+        height: auto;
+      }
+
+      .grid,
+      .grid.three,
+      .scoreboard {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media print {
+      header,
+      aside,
+      .actions {
+        display: none;
+      }
+
+      body {
+        background: white;
+      }
+
+      main {
+        display: block;
+        padding: 0;
+      }
+
+      section {
+        box-shadow: none;
+        border: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>PFAS入口ヒアリング管理</h1>
+    <div class="actions">
+      <button id="newBtn">新規</button>
+      <button id="exportCsvBtn">CSV出力</button>
+      <button id="exportExcelBtn">Excel出力</button>
+      <button id="exportJsonBtn">JSON出力</button>
+      <button id="printBtn">印刷</button>
+    </div>
+  </header>
+
+  <main>
+    <aside>
+      <div class="field">
+        <label for="search">検索</label>
+        <input id="search" placeholder="顧客名・施設種別・次アクション">
+      </div>
+      <div class="grid">
+        <div class="field">
+          <label for="filterClass">分類</label>
+          <select id="filterClass">
+            <option value="">全て</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="filterType">施設</label>
+          <select id="filterType">
+            <option value="">全て</option>
+            <option>下水処理場</option>
+            <option>し尿処理場</option>
+            <option>浄化槽関連</option>
+            <option>民間処理会社</option>
+            <option>その他</option>
+          </select>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="clearFiltersBtn">条件クリア</button>
+      </div>
+      <div id="customerList" class="customer-list"></div>
+    </aside>
+
+    <section>
+      <div class="notice">
+        このアプリは外部送信しません。入力内容は、このブラウザ内の保存領域に保存されます。機密情報を入れる場合は、社内ルールに従ってください。
+      </div>
+
+      <div class="actions" style="margin-bottom: 14px;">
+        <button class="primary" id="saveBtn">保存</button>
+        <button id="duplicateBtn">複製</button>
+        <button class="danger" id="deleteBtn">削除</button>
+      </div>
+
+      <h2>分析グラフ</h2>
+      <div id="dashboard" class="grid three" style="margin-bottom: 18px;"></div>
+
+      <h2>顧客情報</h2>
+      <div class="grid">
+        <div class="field">
+          <label for="customerName">顧客名</label>
+          <input id="customerName">
+        </div>
+        <div class="field">
+          <label for="facilityType">施設種別</label>
+          <select id="facilityType">
+            <option>下水処理場</option>
+            <option>し尿処理場</option>
+            <option>浄化槽関連</option>
+            <option>民間処理会社</option>
+            <option>その他</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="contactPerson">担当者</label>
+          <input id="contactPerson">
+        </div>
+        <div class="field">
+          <label for="hearingDate">ヒアリング日</label>
+          <input id="hearingDate" type="date">
+        </div>
+      </div>
+
+      <h2>判定</h2>
+      <div class="scoreboard">
+        <div class="score"><span>PFAS関心</span><strong id="scorePfasView">0</strong></div>
+        <div class="score"><span>調査可能性</span><strong id="scoreSurveyView">0</strong></div>
+        <div class="score"><span>脱水改善</span><strong id="scoreDewaterView">0</strong></div>
+        <div class="score"><span>リン・窒素</span><strong id="scoreNutrientView">0</strong></div>
+        <div class="score"><span>設備更新</span><strong id="scoreEquipmentView">0</strong></div>
+      </div>
+
+      <div class="grid three">
+        <div class="field">
+          <label for="overallClass">総合分類</label>
+          <select id="overallClass">
+            <option value="A">A: すぐ次へ</option>
+            <option value="B">B: 情報提供継続</option>
+            <option value="C">C: 今回は保留</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="nextAction">次アクション</label>
+          <select id="nextAction">
+            <option>未定</option>
+            <option>PFAS分析見積</option>
+            <option>基本水質調査</option>
+            <option>脱水ケーキ調査</option>
+            <option>薬品テスト</option>
+            <option>リン・窒素相談</option>
+            <option>設備更新相談</option>
+            <option>情報提供のみ</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="nextDate">次回予定</label>
+          <input id="nextDate" type="date">
+        </div>
+      </div>
+
+      <h2>ヒアリング</h2>
+
+      <div class="question">
+        <h3>PFAS</h3>
+        <div class="grid three">
+          <div class="field">
+            <label for="pfasRequest">確認を求められたか</label>
+            <select id="pfasRequest" data-score="scorePfas">
+              <option value="0">不明</option>
+              <option value="1">なし</option>
+              <option value="2">あり</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="pfasMeasured">測定実績</label>
+            <select id="pfasMeasured" data-score="scoreSurvey">
+              <option value="0">不明</option>
+              <option value="1">あり</option>
+              <option value="2">なし・関心あり</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="pfasInterest">情報提供希望</label>
+            <select id="pfasInterest" data-score="scorePfas">
+              <option value="0">不明</option>
+              <option value="1">不要</option>
+              <option value="2">希望</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="question">
+        <h3>水質・汚泥・脱水</h3>
+        <div class="grid three">
+          <div class="field">
+            <label for="dewaterIssue">含水率の困りごと</label>
+            <select id="dewaterIssue" data-score="scoreDewater">
+              <option value="0">不明</option>
+              <option value="1">なし</option>
+              <option value="2">あり</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="sludgeCost">汚泥処分費</label>
+            <select id="sludgeCost" data-score="scoreDewater">
+              <option value="0">不明</option>
+              <option value="1">横ばい</option>
+              <option value="2">上昇</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="chemicalUse">薬品使用量</label>
+            <select id="chemicalUse" data-score="scoreDewater">
+              <option value="0">不明</option>
+              <option value="1">横ばい</option>
+              <option value="2">増加</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="question">
+        <h3>リン・窒素</h3>
+        <div class="grid three">
+          <div class="field">
+            <label for="phosphorusIssue">リン管理</label>
+            <select id="phosphorusIssue" data-score="scoreNutrient">
+              <option value="0">不明</option>
+              <option value="1">問題なし</option>
+              <option value="2">課題あり</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="nitrogenIssue">窒素・アンモニア管理</label>
+            <select id="nitrogenIssue" data-score="scoreNutrient">
+              <option value="0">不明</option>
+              <option value="1">問題なし</option>
+              <option value="2">課題あり</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="nutrientInterest">薬品・運転見直し</label>
+            <select id="nutrientInterest" data-score="scoreNutrient">
+              <option value="0">不明</option>
+              <option value="1">関心低い</option>
+              <option value="2">関心あり</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="question">
+        <h3>設備・省エネ</h3>
+        <div class="grid three">
+          <div class="field">
+            <label for="dosingEquipment">薬注設備</label>
+            <select id="dosingEquipment" data-score="scoreEquipment">
+              <option value="0">不明</option>
+              <option value="1">問題なし</option>
+              <option value="2">老朽化あり</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="blowerPump">ブロワ・ポンプ</label>
+            <select id="blowerPump" data-score="scoreEquipment">
+              <option value="0">不明</option>
+              <option value="1">問題なし</option>
+              <option value="2">更新余地あり</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="odorIssue">臭気</label>
+            <select id="odorIssue" data-score="scoreEquipment">
+              <option value="0">不明</option>
+              <option value="1">問題なし</option>
+              <option value="2">課題あり</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="question">
+        <h3>メモ</h3>
+        <div class="field">
+          <label for="notes">聞き取った内容</label>
+          <textarea id="notes"></textarea>
+        </div>
+        <div class="field">
+          <label for="proposalMemo">提案メモ</label>
+          <textarea id="proposalMemo"></textarea>
+        </div>
+      </div>
+
+      <p class="muted">A判定の目安: 合計スコア6以上、または調査・脱水・リン窒素・設備のいずれかで明確な課題がある顧客。</p>
+    </section>
+  </main>
+
+  <script>
+    const storageKey = "pfas_hearing_records_v1";
+    const fields = [
+      "customerName", "facilityType", "contactPerson", "hearingDate",
+      "overallClass", "nextAction", "nextDate",
+      "pfasRequest", "pfasMeasured", "pfasInterest",
+      "dewaterIssue", "sludgeCost", "chemicalUse",
+      "phosphorusIssue", "nitrogenIssue", "nutrientInterest",
+      "dosingEquipment", "blowerPump", "odorIssue",
+      "notes", "proposalMemo"
+    ];
+    let records = [];
+    let activeId = null;
+
+    function uid() {
+      return "r_" + Date.now() + "_" + Math.random().toString(16).slice(2);
+    }
+
+    function load() {
+      try {
+        records = JSON.parse(localStorage.getItem(storageKey) || "[]");
+      } catch {
+        records = [];
+      }
+      if (!records.length) {
+        const initial = blankRecord();
+        records.push(initial);
+        activeId = initial.id;
+        persist();
+      } else {
+        activeId = records[0].id;
+      }
+    }
+
+    function blankRecord() {
+      const today = new Date().toISOString().slice(0, 10);
+      return {
+        id: uid(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        customerName: "",
+        facilityType: "下水処理場",
+        contactPerson: "",
+        hearingDate: today,
+        overallClass: "B",
+        nextAction: "未定",
+        nextDate: "",
+        pfasRequest: "0",
+        pfasMeasured: "0",
+        pfasInterest: "0",
+        dewaterIssue: "0",
+        sludgeCost: "0",
+        chemicalUse: "0",
+        phosphorusIssue: "0",
+        nitrogenIssue: "0",
+        nutrientInterest: "0",
+        dosingEquipment: "0",
+        blowerPump: "0",
+        odorIssue: "0",
+        notes: "",
+        proposalMemo: ""
+      };
+    }
+
+    function persist() {
+      localStorage.setItem(storageKey, JSON.stringify(records));
+    }
+
+    function current() {
+      return records.find(record => record.id === activeId);
+    }
+
+    function setForm(record) {
+      fields.forEach(field => {
+        const element = document.getElementById(field);
+        if (element) element.value = record[field] || "";
+      });
+      updateScores();
+    }
+
+    function getForm() {
+      const record = current() || blankRecord();
+      fields.forEach(field => {
+        const element = document.getElementById(field);
+        if (element) record[field] = element.value;
+      });
+      record.updatedAt = new Date().toISOString();
+      return record;
+    }
+
+    function save() {
+      const record = getForm();
+      const index = records.findIndex(item => item.id === record.id);
+      if (index >= 0) records[index] = record;
+      persist();
+      renderList();
+    }
+
+    function updateScores() {
+      const scores = {
+        scorePfas: 0,
+        scoreSurvey: 0,
+        scoreDewater: 0,
+        scoreNutrient: 0,
+        scoreEquipment: 0
+      };
+      document.querySelectorAll("[data-score]").forEach(element => {
+        scores[element.dataset.score] += Number(element.value || 0);
+      });
+      document.getElementById("scorePfasView").textContent = scores.scorePfas;
+      document.getElementById("scoreSurveyView").textContent = scores.scoreSurvey;
+      document.getElementById("scoreDewaterView").textContent = scores.scoreDewater;
+      document.getElementById("scoreNutrientView").textContent = scores.scoreNutrient;
+      document.getElementById("scoreEquipmentView").textContent = scores.scoreEquipment;
+      const total = Object.values(scores).reduce((sum, value) => sum + value, 0);
+      const overall = document.getElementById("overallClass");
+      if (total >= 10) overall.value = "A";
+      else if (total >= 5 && overall.value === "C") overall.value = "B";
+    }
+
+    function renderList() {
+      const list = document.getElementById("customerList");
+      const search = document.getElementById("search").value.trim().toLowerCase();
+      const filterClass = document.getElementById("filterClass").value;
+      const filterType = document.getElementById("filterType").value;
+      const filtered = records.filter(record => {
+        const text = [record.customerName, record.facilityType, record.nextAction, record.notes].join(" ").toLowerCase();
+        return (!search || text.includes(search)) &&
+          (!filterClass || record.overallClass === filterClass) &&
+          (!filterType || record.facilityType === filterType);
+      });
+      list.innerHTML = "";
+      filtered.forEach(record => {
+        const card = document.createElement("div");
+        card.className = "customer-card" + (record.id === activeId ? " active" : "");
+        card.innerHTML = `
+          <strong>${escapeHtml(record.customerName || "未入力の顧客")}</strong>
+          <span>${escapeHtml(record.facilityType || "")} / ${escapeHtml(record.hearingDate || "")}</span>
+          <span>次: ${escapeHtml(record.nextAction || "未定")}</span>
+          <div class="pill-row">
+            <span class="pill ${(record.overallClass || "B").toLowerCase()}">${escapeHtml(record.overallClass || "B")}</span>
+          </div>
+        `;
+        card.addEventListener("click", () => {
+          save();
+          activeId = record.id;
+          setForm(record);
+          renderList();
+        });
+        list.appendChild(card);
+      });
+      if (!filtered.length) {
+        list.innerHTML = '<p class="muted">該当する顧客がありません。</p>';
+      }
+      renderDashboard();
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, character => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      }[character]));
+    }
+
+    function exportCsv() {
+      save();
+      const headers = exportHeaders();
+      const rows = records.map(exportRow);
+      const csv = [headers, ...rows].map(row => row.map(cell => `"${String(cell || "").replace(/"/g, '""')}"`).join(",")).join("\n");
+      download("pfas_hearing_records.csv", "\ufeff" + csv, "text/csv;charset=utf-8");
+    }
+
+    function exportHeaders() {
+      return [
+        "顧客名", "施設種別", "担当者", "ヒアリング日", "分類", "次アクション", "次回予定",
+        "PFAS確認", "PFAS測定", "PFAS情報希望", "含水率課題", "汚泥処分費", "薬品使用量",
+        "リン管理", "窒素管理", "栄養塩見直し", "薬注設備", "ブロワ・ポンプ", "臭気",
+        "PFASスコア", "調査スコア", "脱水スコア", "リン窒素スコア", "設備スコア", "総合スコア",
+        "メモ", "提案メモ"
+      ];
+    }
+
+    function exportRow(record) {
+      const scores = recordScores(record);
+      return [
+        record.customerName, record.facilityType, record.contactPerson, record.hearingDate,
+        record.overallClass, record.nextAction, record.nextDate,
+        labelValue(record.pfasRequest), labelValue(record.pfasMeasured), labelValue(record.pfasInterest),
+        labelValue(record.dewaterIssue), labelValue(record.sludgeCost), labelValue(record.chemicalUse),
+        labelValue(record.phosphorusIssue), labelValue(record.nitrogenIssue), labelValue(record.nutrientInterest),
+        labelValue(record.dosingEquipment), labelValue(record.blowerPump), labelValue(record.odorIssue),
+        scores.pfas, scores.survey, scores.dewater, scores.nutrient, scores.equipment, scores.total,
+        record.notes, record.proposalMemo
+      ];
+    }
+
+    function labelValue(value) {
+      const labels = { "0": "不明", "1": "低/なし", "2": "高/あり" };
+      return labels[String(value)] || "";
+    }
+
+    function recordScores(record) {
+      const number = key => Number(record[key] || 0);
+      const pfas = number("pfasRequest") + number("pfasInterest");
+      const survey = number("pfasMeasured");
+      const dewater = number("dewaterIssue") + number("sludgeCost") + number("chemicalUse");
+      const nutrient = number("phosphorusIssue") + number("nitrogenIssue") + number("nutrientInterest");
+      const equipment = number("dosingEquipment") + number("blowerPump") + number("odorIssue");
+      return { pfas, survey, dewater, nutrient, equipment, total: pfas + survey + dewater + nutrient + equipment };
+    }
+
+    function exportExcelHtml() {
+      save();
+      const headers = exportHeaders();
+      const bodyRows = records.map(exportRow);
+      const summaryRows = [
+        ["分類", "件数"],
+        ["A", countBy(records, "overallClass").A || 0],
+        ["B", countBy(records, "overallClass").B || 0],
+        ["C", countBy(records, "overallClass").C || 0]
+      ];
+      const workbookHtml = `
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <style>
+              table { border-collapse: collapse; font-family: sans-serif; }
+              th { background: #0f766e; color: white; }
+              th, td { border: 1px solid #999; padding: 6px; }
+              caption { font-weight: bold; text-align: left; margin: 12px 0 6px; }
+            </style>
+          </head>
+          <body>
+            ${tableHtml("顧客一覧", headers, bodyRows)}
+            ${tableHtml("分類サマリー", summaryRows[0], summaryRows.slice(1))}
+          </body>
+        </html>`;
+      download("pfas_hearing_records.xls", "\ufeff" + workbookHtml, "application/vnd.ms-excel;charset=utf-8");
+    }
+
+    function tableHtml(caption, headers, rows) {
+      return `<table><caption>${escapeHtml(caption)}</caption><thead><tr>${headers.map(h => `<th>${escapeHtml(h)}</th>`).join("")}</tr></thead><tbody>${rows.map(row => `<tr>${row.map(cell => `<td>${escapeHtml(cell ?? "")}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+    }
+
+    function countBy(items, key) {
+      return items.reduce((acc, item) => {
+        const value = item[key] || "未入力";
+        acc[value] = (acc[value] || 0) + 1;
+        return acc;
+      }, {});
+    }
+
+    function renderDashboard() {
+      const target = document.getElementById("dashboard");
+      if (!target) return;
+      const classCounts = countBy(records, "overallClass");
+      const facilityCounts = countBy(records, "facilityType");
+      const topCustomers = [...records]
+        .map(record => ({ name: record.customerName || "未入力", score: recordScores(record).total, cls: record.overallClass || "B" }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5);
+      target.innerHTML = [
+        miniChart("分類", [["A", classCounts.A || 0], ["B", classCounts.B || 0], ["C", classCounts.C || 0]]),
+        miniChart("施設種別", Object.entries(facilityCounts).slice(0, 5)),
+        miniChart("顧客スコア上位", topCustomers.map(item => [`${item.name} (${item.cls})`, item.score]))
+      ].join("");
+    }
+
+    function miniChart(title, rows) {
+      const max = Math.max(1, ...rows.map(row => Number(row[1] || 0)));
+      const bars = rows.map(([label, value]) => {
+        const width = Math.round((Number(value || 0) / max) * 100);
+        return `
+          <div style="margin:8px 0;">
+            <div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#687383;">
+              <span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong>
+            </div>
+            <div style="height:9px;background:#e5e7eb;border-radius:999px;overflow:hidden;">
+              <div style="width:${width}%;height:9px;background:#0f766e;"></div>
+            </div>
+          </div>`;
+      }).join("");
+      return `<div class="score" style="min-height:160px;"><span>${escapeHtml(title)}</span>${bars || '<p class="muted">データなし</p>'}</div>`;
+    }
+
+    function exportJson() {
+      save();
+      download("pfas_hearing_records.json", JSON.stringify(records, null, 2), "application/json");
+    }
+
+    function download(filename, content, type) {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    document.getElementById("newBtn").addEventListener("click", () => {
+      save();
+      const record = blankRecord();
+      records.unshift(record);
+      activeId = record.id;
+      persist();
+      setForm(record);
+      renderList();
+    });
+
+    document.getElementById("saveBtn").addEventListener("click", save);
+    document.getElementById("exportCsvBtn").addEventListener("click", exportCsv);
+    document.getElementById("exportExcelBtn").addEventListener("click", exportExcelHtml);
+    document.getElementById("exportJsonBtn").addEventListener("click", exportJson);
+    document.getElementById("printBtn").addEventListener("click", () => window.print());
+    document.getElementById("search").addEventListener("input", renderList);
+    document.getElementById("filterClass").addEventListener("change", renderList);
+    document.getElementById("filterType").addEventListener("change", renderList);
+    document.getElementById("clearFiltersBtn").addEventListener("click", () => {
+      document.getElementById("search").value = "";
+      document.getElementById("filterClass").value = "";
+      document.getElementById("filterType").value = "";
+      renderList();
+    });
+
+    document.getElementById("duplicateBtn").addEventListener("click", () => {
+      save();
+      const copy = { ...current(), id: uid(), customerName: (current().customerName || "未入力の顧客") + " コピー", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+      records.unshift(copy);
+      activeId = copy.id;
+      persist();
+      setForm(copy);
+      renderList();
+    });
+
+    document.getElementById("deleteBtn").addEventListener("click", () => {
+      if (!confirm("この顧客レコードを削除しますか。")) return;
+      records = records.filter(record => record.id !== activeId);
+      if (!records.length) records.push(blankRecord());
+      activeId = records[0].id;
+      persist();
+      setForm(current());
+      renderList();
+    });
+
+    document.querySelectorAll("input, select, textarea").forEach(element => {
+      element.addEventListener("change", () => {
+        updateScores();
+        save();
+      });
+      element.addEventListener("input", () => {
+        if (element.tagName === "TEXTAREA" || element.tagName === "INPUT") save();
+      });
+    });
+
+    load();
+    setForm(current());
+    renderList();
+  </script>
+</body>
+</html>

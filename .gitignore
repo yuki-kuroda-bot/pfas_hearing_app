@@ -1,0 +1,21 @@
+# Customer data and exports
+data/*
+exports/*
+backup/*
+!data/README.md
+!exports/README.md
+!backup/README.md
+*.csv
+*.json
+
+# Spreadsheet files that may contain real customer data
+*_records.xls
+*_records.xlsx
+*_export.xls
+*_export.xlsx
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
