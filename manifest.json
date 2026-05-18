@@ -1,0 +1,18 @@
+{
+  "name": "PFAS入口ヒアリング管理",
+  "short_name": "PFASヒアリング",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f6f7f9",
+  "theme_color": "#15313a",
+  "lang": "ja",
+  "scope": "./",
+  "icons": [
+    {
+      "src": "icons/pfas-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
