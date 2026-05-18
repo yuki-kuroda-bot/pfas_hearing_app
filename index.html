@@ -3,6 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#15313a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="PFASヒアリング">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/pfas-icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/pfas-icon.svg">
   <title>PFAS入口ヒアリング管理</title>
   <style>
     :root {
@@ -28,6 +34,28 @@
       background: var(--bg);
       color: var(--ink);
       line-height: 1.5;
+    }
+
+    body.mobile-list section {
+      display: none;
+    }
+
+    body.mobile-form aside,
+    body.mobile-dashboard aside {
+      display: none;
+    }
+
+    body.mobile-dashboard .form-block {
+      display: none;
+    }
+
+    @media (min-width: 861px) {
+      body.mobile-list section,
+      body.mobile-form aside,
+      body.mobile-dashboard aside,
+      body.mobile-dashboard .form-block {
+        display: block;
+      }
     }
 
     header {
@@ -142,6 +170,11 @@
       min-height: 38px;
     }
 
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
     button.primary {
       background: var(--accent);
       border-color: var(--accent);
@@ -213,6 +246,7 @@
     .pill.a { background: #dcfce7; color: var(--good); border-color: #a7f3d0; }
     .pill.b { background: #fef3c7; color: var(--warn); border-color: #fde68a; }
     .pill.c { background: #fee2e2; color: var(--bad); border-color: #fecaca; }
+    .pill.unclassified { background: #eef2f7; color: #475569; border-color: #cbd5e1; }
 
     .scoreboard {
       display: grid;
@@ -261,9 +295,60 @@
       font-size: 14px;
     }
 
+    .notice strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .mobile-tabs {
+      display: none;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: #ffffff;
+      border-bottom: 1px solid var(--line);
+      padding: 8px;
+      gap: 6px;
+    }
+
+    .mobile-tabs button {
+      flex: 1;
+      padding: 9px 8px;
+      font-size: 13px;
+    }
+
+    .mobile-tabs button.active {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    .field-note {
+      color: var(--muted);
+      font-size: 12px;
+      margin: -4px 0 8px;
+    }
+
     @media (max-width: 860px) {
+      body {
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+
+      header {
+        padding: 14px 12px;
+      }
+
+      h1 {
+        font-size: 18px;
+      }
+
+      .mobile-tabs {
+        display: flex;
+      }
+
       main {
         grid-template-columns: 1fr;
+        padding: 12px;
       }
 
       aside {
@@ -275,6 +360,21 @@
       .grid.three,
       .scoreboard {
         grid-template-columns: 1fr;
+      }
+
+      .actions button {
+        flex: 1 1 140px;
+      }
+
+      input,
+      select,
+      textarea,
+      button {
+        font-size: 16px;
+      }
+
+      textarea {
+        min-height: 120px;
       }
     }
 
@@ -309,9 +409,17 @@
       <button id="exportCsvBtn">CSV出力</button>
       <button id="exportExcelBtn">Excel出力</button>
       <button id="exportJsonBtn">JSON出力</button>
+      <button id="importJsonBtn">JSON読込</button>
       <button id="printBtn">印刷</button>
     </div>
   </header>
+  <input id="importJsonInput" type="file" accept="application/json,.json" hidden>
+
+  <nav class="mobile-tabs" aria-label="携帯用メニュー">
+    <button class="active" id="mobileFormBtn" type="button">入力</button>
+    <button id="mobileListBtn" type="button">一覧</button>
+    <button id="mobileDashboardBtn" type="button">分析</button>
+  </nav>
 
   <main>
     <aside>
@@ -324,6 +432,7 @@
           <label for="filterClass">分類</label>
           <select id="filterClass">
             <option value="">全て</option>
+            <option value="unclassified">未分類</option>
             <option value="A">A</option>
             <option value="B">B</option>
             <option value="C">C</option>
@@ -340,6 +449,20 @@
             <option>その他</option>
           </select>
         </div>
+        <div class="field">
+          <label for="filterStage">営業進捗</label>
+          <select id="filterStage">
+            <option value="">全て</option>
+            <option>未訪問</option>
+            <option>ヒアリング済</option>
+            <option>情報提供中</option>
+            <option>見積準備</option>
+            <option>見積提出</option>
+            <option>提案中</option>
+            <option>受注</option>
+            <option>保留</option>
+          </select>
+        </div>
       </div>
       <div class="actions">
         <button id="clearFiltersBtn">条件クリア</button>
@@ -349,7 +472,8 @@
 
     <section>
       <div class="notice">
-        このアプリは外部送信しません。入力内容は、このブラウザ内の保存領域に保存されます。機密情報を入れる場合は、社内ルールに従ってください。
+        <strong>外出先モード</strong>
+        入力内容はこの端末のブラウザ内に保存され、外部送信しません。外出先では携帯だけで入力し、帰社後にJSON出力・JSON読込でPCへ戻してください。
       </div>
 
       <div class="actions" style="margin-bottom: 14px;">
@@ -358,14 +482,18 @@
         <button class="danger" id="deleteBtn">削除</button>
       </div>
 
+      <div class="dashboard-block">
       <h2>分析グラフ</h2>
       <div id="dashboard" class="grid three" style="margin-bottom: 18px;"></div>
+      </div>
 
+      <div class="form-block">
       <h2>顧客情報</h2>
       <div class="grid">
         <div class="field">
           <label for="customerName">顧客名</label>
           <input id="customerName">
+          <p class="field-note">携帯入力では、まず顧客名・施設種別・聞き取った内容だけでも保存できます。</p>
         </div>
         <div class="field">
           <label for="facilityType">施設種別</label>
@@ -385,6 +513,24 @@
           <label for="hearingDate">ヒアリング日</label>
           <input id="hearingDate" type="date">
         </div>
+        <div class="field">
+          <label for="customerSegment">顧客区分</label>
+          <select id="customerSegment">
+            <option>既存顧客</option>
+            <option>新規候補</option>
+            <option>休眠顧客</option>
+            <option>紹介</option>
+            <option>その他</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="area">エリア</label>
+          <input id="area" placeholder="例: 名古屋市、愛知、岐阜、三重">
+        </div>
+        <div class="field">
+          <label for="ourOwner">当社担当</label>
+          <input id="ourOwner">
+        </div>
       </div>
 
       <h2>判定</h2>
@@ -400,9 +546,10 @@
         <div class="field">
           <label for="overallClass">総合分類</label>
           <select id="overallClass">
-            <option value="A">A: すぐ次へ</option>
-            <option value="B">B: 情報提供継続</option>
-            <option value="C">C: 今回は保留</option>
+            <option value="">未分類: まだ判断しない</option>
+            <option value="A">A: 見積・現場確認へ進む</option>
+            <option value="B">B: 情報提供を続ける</option>
+            <option value="C">C: 今回は追わない</option>
           </select>
         </div>
         <div class="field">
@@ -421,6 +568,39 @@
         <div class="field">
           <label for="nextDate">次回予定</label>
           <input id="nextDate" type="date">
+        </div>
+        <div class="field">
+          <label for="salesStage">営業進捗</label>
+          <select id="salesStage">
+            <option>未訪問</option>
+            <option>ヒアリング済</option>
+            <option>情報提供中</option>
+            <option>見積準備</option>
+            <option>見積提出</option>
+            <option>提案中</option>
+            <option>受注</option>
+            <option>保留</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="budgetTiming">予算時期</label>
+          <select id="budgetTiming">
+            <option>未確認</option>
+            <option>今年度</option>
+            <option>来年度</option>
+            <option>補正・追加予算</option>
+            <option>予算なし</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="estimatedOpportunity">見込み規模</label>
+          <select id="estimatedOpportunity">
+            <option>未定</option>
+            <option>50万円未満</option>
+            <option>50万から300万円</option>
+            <option>300万から1000万円</option>
+            <option>1000万円以上</option>
+          </select>
         </div>
       </div>
 
@@ -556,9 +736,14 @@
           <label for="proposalMemo">提案メモ</label>
           <textarea id="proposalMemo"></textarea>
         </div>
+        <div class="field">
+          <label for="decisionMemo">予算・決裁メモ</label>
+          <textarea id="decisionMemo" placeholder="誰が判断するか、いつ予算化できそうか、外部共有してはいけない情報など"></textarea>
+        </div>
       </div>
 
-      <p class="muted">A判定の目安: 合計スコア6以上、または調査・脱水・リン窒素・設備のいずれかで明確な課題がある顧客。</p>
+      <p class="muted">分類の目安: Aは見積や現場確認へ進む顧客、Bは情報提供を続ける顧客、Cは今回は無理に追わない顧客です。迷う場合は未分類のままで大丈夫です。</p>
+      </div>
     </section>
   </main>
 
@@ -566,13 +751,28 @@
     const storageKey = "pfas_hearing_records_v1";
     const fields = [
       "customerName", "facilityType", "contactPerson", "hearingDate",
-      "overallClass", "nextAction", "nextDate",
+      "customerSegment", "area", "ourOwner",
+      "overallClass", "nextAction", "nextDate", "salesStage", "budgetTiming", "estimatedOpportunity",
       "pfasRequest", "pfasMeasured", "pfasInterest",
       "dewaterIssue", "sludgeCost", "chemicalUse",
       "phosphorusIssue", "nitrogenIssue", "nutrientInterest",
       "dosingEquipment", "blowerPump", "odorIssue",
-      "notes", "proposalMemo"
+      "notes", "proposalMemo", "decisionMemo"
     ];
+    const fieldLabels = {
+      pfasRequest: { "0": "不明", "1": "なし", "2": "あり" },
+      pfasMeasured: { "0": "不明", "1": "あり", "2": "なし・関心あり" },
+      pfasInterest: { "0": "不明", "1": "不要", "2": "希望" },
+      dewaterIssue: { "0": "不明", "1": "なし", "2": "あり" },
+      sludgeCost: { "0": "不明", "1": "横ばい", "2": "上昇" },
+      chemicalUse: { "0": "不明", "1": "横ばい", "2": "増加" },
+      phosphorusIssue: { "0": "不明", "1": "問題なし", "2": "課題あり" },
+      nitrogenIssue: { "0": "不明", "1": "問題なし", "2": "課題あり" },
+      nutrientInterest: { "0": "不明", "1": "関心低い", "2": "関心あり" },
+      dosingEquipment: { "0": "不明", "1": "問題なし", "2": "老朽化あり" },
+      blowerPump: { "0": "不明", "1": "問題なし", "2": "更新余地あり" },
+      odorIssue: { "0": "不明", "1": "問題なし", "2": "課題あり" }
+    };
     let records = [];
     let activeId = null;
 
@@ -586,14 +786,7 @@
       } catch {
         records = [];
       }
-      if (!records.length) {
-        const initial = blankRecord();
-        records.push(initial);
-        activeId = initial.id;
-        persist();
-      } else {
-        activeId = records[0].id;
-      }
+      activeId = records.length ? records[0].id : null;
     }
 
     function blankRecord() {
@@ -606,9 +799,15 @@
         facilityType: "下水処理場",
         contactPerson: "",
         hearingDate: today,
-        overallClass: "B",
+        customerSegment: "既存顧客",
+        area: "",
+        ourOwner: "",
+        overallClass: "",
         nextAction: "未定",
         nextDate: "",
+        salesStage: "未訪問",
+        budgetTiming: "未確認",
+        estimatedOpportunity: "未定",
         pfasRequest: "0",
         pfasMeasured: "0",
         pfasInterest: "0",
@@ -622,12 +821,14 @@
         blowerPump: "0",
         odorIssue: "0",
         notes: "",
-        proposalMemo: ""
+        proposalMemo: "",
+        decisionMemo: ""
       };
     }
 
     function persist() {
       localStorage.setItem(storageKey, JSON.stringify(records));
+      updateButtonState();
     }
 
     function current() {
@@ -635,15 +836,18 @@
     }
 
     function setForm(record) {
+      const formRecord = record || blankRecord();
       fields.forEach(field => {
         const element = document.getElementById(field);
-        if (element) element.value = record[field] || "";
+        if (element) element.value = formRecord[field] || "";
       });
       updateScores();
+      updateButtonState();
     }
 
     function getForm() {
-      const record = current() || blankRecord();
+      const record = current();
+      if (!record) return null;
       fields.forEach(field => {
         const element = document.getElementById(field);
         if (element) record[field] = element.value;
@@ -654,10 +858,22 @@
 
     function save() {
       const record = getForm();
+      if (!record) return;
       const index = records.findIndex(item => item.id === record.id);
       if (index >= 0) records[index] = record;
       persist();
       renderList();
+    }
+
+    function updateButtonState() {
+      const hasRecord = Boolean(activeId);
+      document.getElementById("saveBtn").disabled = !hasRecord;
+      document.getElementById("duplicateBtn").disabled = !hasRecord;
+      document.getElementById("deleteBtn").disabled = !hasRecord;
+      document.getElementById("exportCsvBtn").disabled = !records.length;
+      document.getElementById("exportExcelBtn").disabled = !records.length;
+      document.getElementById("exportJsonBtn").disabled = !records.length;
+      document.getElementById("printBtn").disabled = !hasRecord;
     }
 
     function updateScores() {
@@ -687,22 +903,33 @@
       const search = document.getElementById("search").value.trim().toLowerCase();
       const filterClass = document.getElementById("filterClass").value;
       const filterType = document.getElementById("filterType").value;
+      const filterStage = document.getElementById("filterStage").value;
       const filtered = records.filter(record => {
-        const text = [record.customerName, record.facilityType, record.nextAction, record.notes].join(" ").toLowerCase();
+        const text = [
+          record.customerName, record.facilityType, record.customerSegment, record.area,
+          record.ourOwner, record.nextAction, record.salesStage, record.notes, record.proposalMemo
+        ].join(" ").toLowerCase();
+        const classMatches = filterClass === "unclassified"
+          ? !record.overallClass
+          : (!filterClass || record.overallClass === filterClass);
         return (!search || text.includes(search)) &&
-          (!filterClass || record.overallClass === filterClass) &&
-          (!filterType || record.facilityType === filterType);
+          classMatches &&
+          (!filterType || record.facilityType === filterType) &&
+          (!filterStage || record.salesStage === filterStage);
       });
       list.innerHTML = "";
       filtered.forEach(record => {
+        const classValue = record.overallClass || "";
+        const classLabel = classValue || "未分類";
+        const className = classValue ? classValue.toLowerCase() : "unclassified";
         const card = document.createElement("div");
         card.className = "customer-card" + (record.id === activeId ? " active" : "");
         card.innerHTML = `
           <strong>${escapeHtml(record.customerName || "未入力の顧客")}</strong>
           <span>${escapeHtml(record.facilityType || "")} / ${escapeHtml(record.hearingDate || "")}</span>
-          <span>次: ${escapeHtml(record.nextAction || "未定")}</span>
+          <span>${escapeHtml(record.salesStage || "未訪問")} / 次: ${escapeHtml(record.nextAction || "未定")}</span>
           <div class="pill-row">
-            <span class="pill ${(record.overallClass || "B").toLowerCase()}">${escapeHtml(record.overallClass || "B")}</span>
+            <span class="pill ${className}">${escapeHtml(classLabel)}</span>
           </div>
         `;
         card.addEventListener("click", () => {
@@ -714,9 +941,12 @@
         list.appendChild(card);
       });
       if (!filtered.length) {
-        list.innerHTML = '<p class="muted">該当する顧客がありません。</p>';
+        list.innerHTML = records.length
+          ? '<p class="muted">該当する顧客がありません。</p>'
+          : '<p class="muted">顧客レコードはありません。上の「新規」から入力を始めてください。</p>';
       }
       renderDashboard();
+      updateButtonState();
     }
 
     function escapeHtml(value) {
@@ -739,11 +969,12 @@
 
     function exportHeaders() {
       return [
-        "顧客名", "施設種別", "担当者", "ヒアリング日", "分類", "次アクション", "次回予定",
+        "顧客名", "施設種別", "担当者", "ヒアリング日", "顧客区分", "エリア", "当社担当",
+        "分類", "次アクション", "次回予定", "営業進捗", "予算時期", "見込み規模",
         "PFAS確認", "PFAS測定", "PFAS情報希望", "含水率課題", "汚泥処分費", "薬品使用量",
         "リン管理", "窒素管理", "栄養塩見直し", "薬注設備", "ブロワ・ポンプ", "臭気",
         "PFASスコア", "調査スコア", "脱水スコア", "リン窒素スコア", "設備スコア", "総合スコア",
-        "メモ", "提案メモ"
+        "メモ", "提案メモ", "予算・決裁メモ"
       ];
     }
 
@@ -751,19 +982,19 @@
       const scores = recordScores(record);
       return [
         record.customerName, record.facilityType, record.contactPerson, record.hearingDate,
-        record.overallClass, record.nextAction, record.nextDate,
-        labelValue(record.pfasRequest), labelValue(record.pfasMeasured), labelValue(record.pfasInterest),
-        labelValue(record.dewaterIssue), labelValue(record.sludgeCost), labelValue(record.chemicalUse),
-        labelValue(record.phosphorusIssue), labelValue(record.nitrogenIssue), labelValue(record.nutrientInterest),
-        labelValue(record.dosingEquipment), labelValue(record.blowerPump), labelValue(record.odorIssue),
+        record.customerSegment, record.area, record.ourOwner,
+        record.overallClass, record.nextAction, record.nextDate, record.salesStage, record.budgetTiming, record.estimatedOpportunity,
+        labelValue(record, "pfasRequest"), labelValue(record, "pfasMeasured"), labelValue(record, "pfasInterest"),
+        labelValue(record, "dewaterIssue"), labelValue(record, "sludgeCost"), labelValue(record, "chemicalUse"),
+        labelValue(record, "phosphorusIssue"), labelValue(record, "nitrogenIssue"), labelValue(record, "nutrientInterest"),
+        labelValue(record, "dosingEquipment"), labelValue(record, "blowerPump"), labelValue(record, "odorIssue"),
         scores.pfas, scores.survey, scores.dewater, scores.nutrient, scores.equipment, scores.total,
-        record.notes, record.proposalMemo
+        record.notes, record.proposalMemo, record.decisionMemo
       ];
     }
 
-    function labelValue(value) {
-      const labels = { "0": "不明", "1": "低/なし", "2": "高/あり" };
-      return labels[String(value)] || "";
+    function labelValue(record, key) {
+      return (fieldLabels[key] && fieldLabels[key][String(record[key])]) || "";
     }
 
     function recordScores(record) {
@@ -784,7 +1015,8 @@
         ["分類", "件数"],
         ["A", countBy(records, "overallClass").A || 0],
         ["B", countBy(records, "overallClass").B || 0],
-        ["C", countBy(records, "overallClass").C || 0]
+        ["C", countBy(records, "overallClass").C || 0],
+        ["未分類", countBy(records, "overallClass").未分類 || 0]
       ];
       const workbookHtml = `
         <html>
@@ -811,7 +1043,7 @@
 
     function countBy(items, key) {
       return items.reduce((acc, item) => {
-        const value = item[key] || "未入力";
+        const value = item[key] || "未分類";
         acc[value] = (acc[value] || 0) + 1;
         return acc;
       }, {});
@@ -822,13 +1054,15 @@
       if (!target) return;
       const classCounts = countBy(records, "overallClass");
       const facilityCounts = countBy(records, "facilityType");
+      const stageCounts = countBy(records, "salesStage");
       const topCustomers = [...records]
-        .map(record => ({ name: record.customerName || "未入力", score: recordScores(record).total, cls: record.overallClass || "B" }))
+        .map(record => ({ name: record.customerName || "未入力", score: recordScores(record).total, cls: record.overallClass || "未分類" }))
         .sort((a, b) => b.score - a.score)
         .slice(0, 5);
       target.innerHTML = [
-        miniChart("分類", [["A", classCounts.A || 0], ["B", classCounts.B || 0], ["C", classCounts.C || 0]]),
+        miniChart("分類", [["A", classCounts.A || 0], ["B", classCounts.B || 0], ["C", classCounts.C || 0], ["未分類", classCounts.未分類 || 0]]),
         miniChart("施設種別", Object.entries(facilityCounts).slice(0, 5)),
+        miniChart("営業進捗", Object.entries(stageCounts).slice(0, 6)),
         miniChart("顧客スコア上位", topCustomers.map(item => [`${item.name} (${item.cls})`, item.score]))
       ].join("");
     }
@@ -855,6 +1089,39 @@
       download("pfas_hearing_records.json", JSON.stringify(records, null, 2), "application/json");
     }
 
+    function importJson(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = event => {
+        try {
+          const imported = JSON.parse(event.target.result);
+          if (!Array.isArray(imported)) throw new Error("Invalid format");
+          const currentById = new Map(records.map(record => [record.id, record]));
+          imported.forEach(record => {
+            if (!record || typeof record !== "object") return;
+            const id = record.id || uid();
+            const existing = currentById.get(id);
+            const importedUpdated = new Date(record.updatedAt || record.createdAt || 0).getTime();
+            const existingUpdated = existing ? new Date(existing.updatedAt || existing.createdAt || 0).getTime() : -1;
+            if (!existing || importedUpdated >= existingUpdated) {
+              currentById.set(id, { ...blankRecord(), ...record, id });
+            }
+          });
+          records = Array.from(currentById.values()).sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+          activeId = records.length ? records[0].id : null;
+          persist();
+          setForm(current());
+          renderList();
+          alert("JSONデータを読み込みました。PCと携帯の両方に同じ顧客データが入ります。");
+        } catch {
+          alert("JSONを読み込めませんでした。PFASヒアリングアプリから出力したJSONを選んでください。");
+        } finally {
+          document.getElementById("importJsonInput").value = "";
+        }
+      };
+      reader.readAsText(file);
+    }
+
     function download(filename, content, type) {
       const blob = new Blob([content], { type });
       const url = URL.createObjectURL(blob);
@@ -879,20 +1146,29 @@
     document.getElementById("exportCsvBtn").addEventListener("click", exportCsv);
     document.getElementById("exportExcelBtn").addEventListener("click", exportExcelHtml);
     document.getElementById("exportJsonBtn").addEventListener("click", exportJson);
+    document.getElementById("importJsonBtn").addEventListener("click", () => {
+      if (!confirm("JSON読込を行います。顧客情報を含むファイルは、社内で管理しているものだけを選んでください。よろしいですか。")) return;
+      document.getElementById("importJsonInput").click();
+    });
+    document.getElementById("importJsonInput").addEventListener("change", event => importJson(event.target.files[0]));
     document.getElementById("printBtn").addEventListener("click", () => window.print());
     document.getElementById("search").addEventListener("input", renderList);
     document.getElementById("filterClass").addEventListener("change", renderList);
     document.getElementById("filterType").addEventListener("change", renderList);
+    document.getElementById("filterStage").addEventListener("change", renderList);
     document.getElementById("clearFiltersBtn").addEventListener("click", () => {
       document.getElementById("search").value = "";
       document.getElementById("filterClass").value = "";
       document.getElementById("filterType").value = "";
+      document.getElementById("filterStage").value = "";
       renderList();
     });
 
     document.getElementById("duplicateBtn").addEventListener("click", () => {
       save();
-      const copy = { ...current(), id: uid(), customerName: (current().customerName || "未入力の顧客") + " コピー", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+      const source = current();
+      if (!source) return;
+      const copy = { ...source, id: uid(), customerName: (source.customerName || "未入力の顧客") + " コピー", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
       records.unshift(copy);
       activeId = copy.id;
       persist();
@@ -901,10 +1177,10 @@
     });
 
     document.getElementById("deleteBtn").addEventListener("click", () => {
+      if (!activeId) return;
       if (!confirm("この顧客レコードを削除しますか。")) return;
       records = records.filter(record => record.id !== activeId);
-      if (!records.length) records.push(blankRecord());
-      activeId = records[0].id;
+      activeId = records.length ? records[0].id : null;
       persist();
       setForm(current());
       renderList();
@@ -919,6 +1195,21 @@
         if (element.tagName === "TEXTAREA" || element.tagName === "INPUT") save();
       });
     });
+
+    function setMobileView(view) {
+      document.body.classList.remove("mobile-list", "mobile-form", "mobile-dashboard");
+      document.body.classList.add(`mobile-${view}`);
+      document.querySelectorAll(".mobile-tabs button").forEach(button => button.classList.remove("active"));
+      document.getElementById(`mobile${view[0].toUpperCase()}${view.slice(1)}Btn`).classList.add("active");
+    }
+
+    document.getElementById("mobileFormBtn").addEventListener("click", () => setMobileView("form"));
+    document.getElementById("mobileListBtn").addEventListener("click", () => setMobileView("list"));
+    document.getElementById("mobileDashboardBtn").addEventListener("click", () => setMobileView("dashboard"));
+
+    if ("serviceWorker" in navigator && location.protocol !== "file:") {
+      navigator.serviceWorker.register("sw.js").catch(() => {});
+    }
 
     load();
     setForm(current());
